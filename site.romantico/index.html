@@ -364,7 +364,8 @@ body {
   color: #fff; border-radius: 50%;
   width: 40px; height: 40px;
   font-size: 16px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: none;
+  align-items: center; justify-content: center;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 
@@ -403,8 +404,19 @@ body {
 .eq-bars span:nth-child(2) { animation-delay: 0.15s; }
 .eq-bars span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes eq { 0%,100% { height: 3px; } 50% { height: 12px; } }
-
 .eq-bars.paused span { animation-play-state: paused; }
+
+/* ── EXPORT PROGRESS ─── */
+#export-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+  z-index: 99999; display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+}
+#export-overlay.visible { display: flex; }
+#export-overlay .exp-title { font-size: 16px; font-weight: 700; color: #fff; }
+#export-overlay .exp-sub { font-size: 12px; color: var(--text-sub); }
+#export-progress-bar { width: 200px; height: 3px; background: #333; border-radius: 2px; overflow: hidden; }
+#export-progress-fill { height: 100%; background: var(--sp-green); width: 0%; transition: width 0.3s; }
 
 @media (min-width: 480px) { .gallery-grid-2 { grid-template-columns: 1fr 1fr 1fr; } }
 @media (min-width: 640px) {
@@ -417,6 +429,14 @@ body {
 <body>
 
 <div id="toast"></div>
+
+<!-- Export progress overlay -->
+<div id="export-overlay">
+  <div class="exp-title" id="exp-title">Preparando exportação...</div>
+  <div id="export-progress-bar"><div id="export-progress-fill"></div></div>
+  <div class="exp-sub" id="exp-sub">Isso pode levar alguns segundos</div>
+</div>
+
 <div id="lightbox" onclick="closeLightbox()">
   <button id="lightbox-close" onclick="closeLightbox()">✕</button>
   <img id="lightbox-img" src="" alt="">
@@ -424,7 +444,7 @@ body {
 </div>
 
 <!-- Edit Button (hidden in client mode) -->
-<button id="toggle-admin" onclick="toggleAdmin()" title="Personalizar" style="display:none">✏</button>
+<button id="toggle-admin" onclick="toggleAdmin()" title="Personalizar">✏</button>
 
 <!-- Admin Panel -->
 <div id="admin-overlay" onclick="toggleAdmin()"></div>
@@ -505,8 +525,8 @@ body {
   </div>
   <div class="panel-save-bar">
     <button class="btn-save" onclick="saveAll()">✓ Aplicar</button>
-    <button class="btn-export" onclick="exportHTML(false)" title="Baixar (com edição)">⬇ Editor</button>
-    <button class="btn-export-client" onclick="exportHTML(true)" title="Versão para o cliente (sem edição)">📤 Cliente</button>
+    <button class="btn-export" onclick="exportHTML(false)" title="Baixar com painel de edição">⬇ Editor</button>
+    <button class="btn-export-client" onclick="exportHTML(true)" title="Versão para o cliente, sem edição">📤 Cliente</button>
   </div>
 </div>
 
@@ -666,12 +686,13 @@ body {
 
 <script>
 // ══════════════════════════════════════════════
-// DATA
+// DATA — populated from embedded snapshot or defaults
 // ══════════════════════════════════════════════
 let DATA = {
   name1: 'Ana',
   name2: 'Lucas',
   startDate: null,
+  startDateISO: null,
   startPhrase: 'Juntos desde',
   lovenote: 'Cada dia ao seu lado é uma canção que nunca quero parar de ouvir. Você é a melodia mais bonita da minha vida.',
   pageTitle: 'Nossa História ♥',
@@ -695,49 +716,57 @@ let DATA = {
   colors: { accent: '#ff4d6d', green: '#1DB954', dark: '#121212', hero: '#3d0020' }
 };
 
+// ── Load embedded snapshot if present (set during export) ──
+if (window.__SNAPSHOT__) {
+  try {
+    const snap = window.__SNAPSHOT__;
+    DATA = Object.assign(DATA, snap);
+    if (DATA.startDateISO) DATA.startDate = new Date(DATA.startDateISO);
+  } catch(e) { console.warn('Snapshot load failed', e); }
+}
+const CLIENT_MODE = !!window.__CLIENT_MODE__;
+
 // ══════════════════════════════════════════════
 // AUDIO ENGINE
 // ══════════════════════════════════════════════
 let audio = new Audio();
 let currentTrack = 0;
 let isPlaying = false;
-let progressInterval = null;
 
 audio.addEventListener('ended', () => nextTrack());
 audio.addEventListener('timeupdate', updateProgress);
 audio.addEventListener('loadedmetadata', () => {
-  const dur = formatTime(audio.duration);
-  document.getElementById('hero-duration').textContent = dur;
+  document.getElementById('hero-duration').textContent = formatTime(audio.duration);
 });
 
 function loadTrack(index, autoplay) {
   if (!DATA.playlist.length) return;
   const t = DATA.playlist[index];
-  if (!t || !t.audioSrc) {
-    // No audio — still update UI
-    document.getElementById('song-name').textContent = t ? t.title : 'Nossa Canção';
-    document.getElementById('song-artist').textContent = t ? t.artist : DATA.artist;
-    document.getElementById('mp-title').textContent = t ? t.title : 'Nossa Canção';
-    document.getElementById('mp-artist-mini').textContent = t ? t.artist : DATA.artist;
-    document.getElementById('hero-duration').textContent = t ? t.duration : '0:00';
-    renderPlaylist();
-    return;
-  }
-  audio.src = t.audioSrc;
-  audio.load();
-  document.getElementById('song-name').textContent = t.title;
-  document.getElementById('song-artist').textContent = t.artist;
-  document.getElementById('mp-title').textContent = t.title;
-  document.getElementById('mp-artist-mini').textContent = t.artist;
-  if (autoplay) {
-    audio.play().then(() => { isPlaying = true; updatePlayUI(); }).catch(()=>{});
+  if (!t) return;
+
+  const title = t.title || 'Nossa Canção';
+  const artist = t.artist || DATA.artist;
+  const duration = t.duration || '0:00';
+
+  document.getElementById('song-name').textContent = title;
+  document.getElementById('song-artist').textContent = artist;
+  document.getElementById('mp-title').textContent = title;
+  document.getElementById('mp-artist-mini').textContent = artist;
+  document.getElementById('hero-duration').textContent = duration;
+
+  if (t.audioSrc) {
+    audio.src = t.audioSrc;
+    audio.load();
+    if (autoplay) {
+      audio.play().then(() => { isPlaying = true; updatePlayUI(); }).catch(()=>{});
+    }
   }
   renderPlaylist();
 }
 
 function togglePlay() {
   if (!DATA.playlist.length || !DATA.playlist[currentTrack]?.audioSrc) {
-    showToast('🎵 Adicione músicas MP3 no painel de edição');
+    showToast('🎵 ' + (CLIENT_MODE ? 'Nenhuma música disponível' : 'Adicione músicas MP3 no painel de edição'));
     return;
   }
   if (isPlaying) {
@@ -750,13 +779,13 @@ function togglePlay() {
 }
 
 function updatePlayUI() {
-  const playIcon = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
-  const pauseIcon = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
-  document.getElementById('main-play-icon').innerHTML = isPlaying
-    ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'
-    : '<path d="M8 5v14l11-7z"/>';
+  const pi = document.getElementById('main-play-icon');
+  if (isPlaying) {
+    pi.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+  } else {
+    pi.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  }
   document.getElementById('mp-play-btn').textContent = isPlaying ? '⏸' : '▶';
-  // eq bars
   document.querySelectorAll('.eq-bars').forEach(b => b.classList.toggle('paused', !isPlaying));
 }
 
@@ -796,7 +825,6 @@ function playTrackAt(i) {
   isPlaying = true;
   updatePlayUI();
 }
-
 function formatTime(s) {
   if (!s || isNaN(s)) return '0:00';
   const m = Math.floor(s / 60);
@@ -820,6 +848,7 @@ function goPage(name) {
 // ══════════════════════════════════════════════
 let panelOpen = false;
 function toggleAdmin() {
+  if (CLIENT_MODE) return;
   panelOpen = !panelOpen;
   document.getElementById('admin-panel').classList.toggle('open', panelOpen);
   document.getElementById('admin-overlay').classList.toggle('visible', panelOpen);
@@ -840,9 +869,14 @@ function liveUpdate() {
   DATA.startPhrase = document.getElementById('in-start-phrase').value;
   DATA.lovenote = document.getElementById('in-lovenote').value;
   DATA.pageTitle = document.getElementById('in-page-title').value;
-  DATA.artist = DATA.playlist[0]?.artist || document.getElementById('in-name1').value + ' & ' + document.getElementById('in-name2').value;
   const sd = document.getElementById('in-startdate').value;
-  DATA.startDate = sd ? new Date(sd) : null;
+  if (sd) {
+    DATA.startDate = new Date(sd);
+    DATA.startDateISO = DATA.startDate.toISOString();
+  } else {
+    DATA.startDate = null;
+    DATA.startDateISO = null;
+  }
   renderAll();
 }
 
@@ -864,7 +898,8 @@ function renderAll() {
   document.getElementById('moments-sub').textContent = 'A história de ' + DATA.name1 + ' & ' + DATA.name2;
   if (DATA.startDate && !isNaN(DATA.startDate)) {
     const opts = { day: '2-digit', month: 'long', year: 'numeric' };
-    document.getElementById('timer-since').textContent = DATA.startPhrase + ' ' + DATA.startDate.toLocaleDateString('pt-BR', opts);
+    document.getElementById('timer-since').textContent =
+      DATA.startPhrase + ' ' + DATA.startDate.toLocaleDateString('pt-BR', opts);
   } else {
     document.getElementById('timer-since').textContent = 'desde sempre';
   }
@@ -917,7 +952,7 @@ function renderPlaylist() {
   if (!DATA.playlist.length) {
     cont.innerHTML = `<div style="padding:32px 16px;text-align:center;color:var(--text-dim);font-size:13px">
       <div style="font-size:32px;margin-bottom:8px">🎵</div>
-      Nenhuma música ainda.<br>Adicione no painel de edição (✏).
+      Nenhuma música ainda.${CLIENT_MODE ? '' : '<br>Adicione no painel de edição (✏).'}
     </div>`;
     return;
   }
@@ -936,7 +971,9 @@ function renderPlaylist() {
         <div class="pl-track-artist">${p.artist}</div>
       </div>
       <div class="pl-track-dur">${p.duration}</div>
-      ${p.audioSrc ? '<div style="font-size:10px;color:var(--sp-green);flex-shrink:0">▶</div>' : '<div style="font-size:10px;color:var(--text-dim);flex-shrink:0">—</div>'}
+      ${p.audioSrc
+        ? '<div style="font-size:10px;color:var(--sp-green);flex-shrink:0">▶</div>'
+        : '<div style="font-size:10px;color:var(--text-dim);flex-shrink:0">—</div>'}
     </div>`).join('');
   document.getElementById('pl-count').textContent = DATA.playlist.length + ' músicas';
 }
@@ -959,11 +996,23 @@ function renderGallery() {
   renderTimeline();
 }
 
+function applyAlbumToDOM() {
+  if (!DATA.albumImg) return;
+  ['big-album-img','mp-album-img','pl-header-album'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.src = DATA.albumImg; el.classList.add('visible'); }
+  });
+  document.getElementById('big-album-placeholder').style.display = 'none';
+  document.getElementById('mp-art-placeholder').style.display = 'none';
+  document.getElementById('pl-header-placeholder').style.display = 'none';
+}
+
 // ══════════════════════════════════════════════
 // PANEL FIELDS
 // ══════════════════════════════════════════════
 function buildStatFields() {
   const cont = document.getElementById('stats-fields');
+  if (!cont) return;
   const editables = DATA.stats.filter(s => !s.auto);
   cont.innerHTML = editables.map((s) => `
     <div style="background:#161616;border:1px solid #1e1e1e;border-radius:8px;padding:12px;margin-bottom:8px">
@@ -984,6 +1033,7 @@ function buildStatFields() {
 
 function buildTimelineFields() {
   const cont = document.getElementById('timeline-fields');
+  if (!cont) return;
   cont.innerHTML = DATA.timeline.map((t, i) => `
     <div style="background:#161616;border:1px solid #1e1e1e;border-radius:8px;padding:12px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -1009,6 +1059,7 @@ function buildTimelineFields() {
 
 function buildPlaylistFields() {
   const cont = document.getElementById('playlist-fields');
+  if (!cont) return;
   cont.innerHTML = DATA.playlist.map((p, i) => `
     <div class="audio-track-card">
       <div class="audio-track-card-top">
@@ -1043,16 +1094,14 @@ function uploadAlbum(input) {
   const r = new FileReader();
   r.onload = e => {
     DATA.albumImg = e.target.result;
-    ['big-album-img','mp-album-img','pl-header-album'].forEach(id => {
-      const el = document.getElementById(id);
-      el.src = DATA.albumImg; el.classList.add('visible');
-    });
-    document.getElementById('big-album-placeholder').style.display='none';
-    document.getElementById('mp-art-placeholder').style.display='none';
-    document.getElementById('pl-header-placeholder').style.display='none';
-    document.getElementById('zone-album').classList.add('has-file');
-    document.getElementById('zone-album').querySelector('div').textContent='✓ Capa adicionada';
+    applyAlbumToDOM();
+    const zone = document.getElementById('zone-album');
+    if (zone) {
+      zone.classList.add('has-file');
+      zone.querySelector('div').textContent = '✓ Capa adicionada';
+    }
     renderPlaylist();
+    showToast('✓ Capa do álbum adicionada!');
   };
   r.readAsDataURL(input.files[0]);
 }
@@ -1060,12 +1109,16 @@ function uploadAlbum(input) {
 function uploadGallery(input) {
   if (!input.files?.length) return;
   const files = Array.from(input.files); let loaded = 0;
+  showToast('📸 Carregando ' + files.length + ' foto(s)...');
   files.forEach(file => {
     const r = new FileReader();
     r.onload = e => {
       DATA.galleryImgs.push({ src: e.target.result, caption: '' });
       if (++loaded === files.length) {
-        renderGallery(); buildCaptionFields(); updateGalleryPreviews();
+        renderGallery();
+        buildCaptionFields();
+        updateGalleryPreviews();
+        showToast('✓ ' + files.length + ' foto(s) adicionada(s)!');
       }
     };
     r.readAsDataURL(file);
@@ -1075,10 +1128,10 @@ function uploadGallery(input) {
 function uploadAudio(input, index) {
   if (!input.files?.[0]) return;
   const file = input.files[0];
+  showToast('🎵 Carregando ' + file.name + '...');
   const r = new FileReader();
   r.onload = e => {
     DATA.playlist[index].audioSrc = e.target.result;
-    // Try to get duration
     const tmpAudio = new Audio(e.target.result);
     tmpAudio.addEventListener('loadedmetadata', () => {
       DATA.playlist[index].duration = formatTime(tmpAudio.duration);
@@ -1089,13 +1142,14 @@ function uploadAudio(input, index) {
     });
     buildPlaylistFields();
     renderPlaylist();
-    showToast('🎵 Música carregada: ' + file.name);
+    showToast('✓ Música carregada: ' + file.name);
   };
   r.readAsDataURL(file);
 }
 
 function buildCaptionFields() {
   const cont = document.getElementById('caption-fields');
+  if (!cont) return;
   cont.innerHTML = '<div style="margin-top:12px"><div class="sdiv">Legendas</div></div>' +
     DATA.galleryImgs.map((g, i) => `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
@@ -1108,6 +1162,7 @@ function buildCaptionFields() {
 
 function updateGalleryPreviews() {
   const cont = document.getElementById('gallery-previews');
+  if (!cont) return;
   cont.innerHTML = DATA.galleryImgs.map((g, i) => `
     <div class="gallery-prev-item">
       <img src="${g.src}">
@@ -1133,18 +1188,18 @@ function applyColors() {
   r.setProperty('--sp-dark', DATA.colors.dark);
   document.getElementById('home-hero-bg').style.background =
     `linear-gradient(180deg, ${DATA.colors.hero} 0%, var(--sp-dark) 60%)`;
-  document.querySelectorAll('.page-header').forEach(el => {
-    if (!el.classList.contains('green-grad') && !el.classList.contains('blue-grad'))
-      el.style.background = `linear-gradient(180deg, ${DATA.colors.hero} 0%, var(--sp-dark) 100%)`;
-  });
 }
 
 // ══════════════════════════════════════════════
-// SAVE & EXPORT
+// SAVE & TOAST
 // ══════════════════════════════════════════════
 function saveAll() {
-  liveUpdate(); renderAll(); renderStats(); renderTimeline(); renderPlaylist(); renderGallery();
-  showToast('✓ Alterações aplicadas!'); toggleAdmin();
+  liveUpdate();
+  renderAll(); renderStats(); renderTimeline(); renderPlaylist(); renderGallery();
+  buildStatFields(); buildTimelineFields(); buildPlaylistFields();
+  applyColors();
+  showToast('✓ Alterações aplicadas!');
+  toggleAdmin();
 }
 
 function showToast(msg, dur) {
@@ -1153,36 +1208,109 @@ function showToast(msg, dur) {
   setTimeout(() => t.classList.remove('show'), dur || 2500);
 }
 
-// Export: clientMode=false keeps edit button; clientMode=true removes it entirely
+// ══════════════════════════════════════════════
+// EXPORT — THE FIX
+// The key insight: we serialize the entire DATA object (including
+// base64 images and audio) as a JSON snapshot embedded in the HTML.
+// On load, the page reads this snapshot instead of the defaults.
+// ══════════════════════════════════════════════
 function exportHTML(clientMode) {
-  showToast(clientMode ? '📤 Exportando versão cliente...' : '📥 Preparando download...');
+  // Show progress overlay
+  const overlay = document.getElementById('export-overlay');
+  const fill = document.getElementById('export-progress-fill');
+  const title = document.getElementById('exp-title');
+  const sub = document.getElementById('exp-sub');
+  overlay.classList.add('visible');
+  title.textContent = 'Preparando exportação...';
+  sub.textContent = 'Serializando dados...';
+  fill.style.width = '10%';
 
-  let html = document.documentElement.outerHTML;
+  // Use setTimeout to let the UI update before heavy work
+  setTimeout(() => {
+    try {
+      fill.style.width = '30%';
+      sub.textContent = 'Incorporando imagens e músicas...';
 
-  if (clientMode) {
-    // Remove admin panel, overlay, edit button, and toggle-admin button
-    // Mark as client mode so it stays hidden even on load
-    html = html.replace(
-      `document.getElementById('toggle-admin').style.display='none'`,
-      ``
-    );
-    // Inject client flag before </body>
-    html = html.replace('</body>', `
-<script>
-// CLIENT MODE — editing disabled
-document.getElementById('toggle-admin').remove();
-document.getElementById('admin-overlay').remove();
-document.getElementById('admin-panel').remove();
-<\/script>
-</body>`);
-  }
+      // Serialize snapshot — includes all base64 data
+      const snapshot = JSON.stringify({
+        name1: DATA.name1,
+        name2: DATA.name2,
+        startDateISO: DATA.startDateISO,
+        startPhrase: DATA.startPhrase,
+        lovenote: DATA.lovenote,
+        pageTitle: DATA.pageTitle,
+        artist: DATA.artist,
+        albumImg: DATA.albumImg,
+        galleryImgs: DATA.galleryImgs,
+        stats: DATA.stats,
+        timeline: DATA.timeline,
+        playlist: DATA.playlist,
+        colors: DATA.colors
+      });
 
-  const blob = new Blob([html], { type: 'text/html' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = clientMode ? `nossa-historia-CLIENTE.html` : `nossa-historia-editor.html`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      fill.style.width = '60%';
+      sub.textContent = 'Gerando HTML...';
+
+      // Get the base HTML source
+      let html = document.documentElement.outerHTML;
+
+      // 1. Remove any previously embedded snapshot (for re-exports)
+      html = html.replace(/\/\* __SNAPSHOT_START__ \*\/[\s\S]*?\/\* __SNAPSHOT_END__ \*\//g, '');
+      html = html.replace(/<script id="__snapshot__">[\s\S]*?<\/script>/g, '');
+
+      // 2. Inject the snapshot BEFORE the closing </body>
+      const snapshotScript = clientMode
+        ? `<script id="__snapshot__">/* __SNAPSHOT_START__ */window.__CLIENT_MODE__=true;window.__SNAPSHOT__=${snapshot};/* __SNAPSHOT_END__ */<\/script>`
+        : `<script id="__snapshot__">/* __SNAPSHOT_START__ */window.__SNAPSHOT__=${snapshot};/* __SNAPSHOT_END__ */<\/script>`;
+
+      html = html.replace('</body>', snapshotScript + '\n</body>');
+
+      // 3. For client mode: remove admin UI from the exported HTML
+      if (clientMode) {
+        // Remove the toggle button
+        html = html.replace(/<button id="toggle-admin"[\s\S]*?<\/button>/g, '');
+        // Remove admin overlay
+        html = html.replace(/<div id="admin-overlay"[\s\S]*?<\/div>/g, '');
+        // Remove admin panel (complex nested structure — use a more targeted approach)
+        html = html.replace(/<div id="admin-panel">[\s\S]*?(?=<!-- MINI PLAYER -->)/, '');
+        // Remove export overlay (not needed in client)
+        html = html.replace(/<div id="export-overlay">[\s\S]*?<\/div>\s*/, '');
+        // Hide the #toggle-admin CSS display style
+        html = html.replace(
+          '#toggle-admin {\n  position: fixed; top: 16px; right: 16px; z-index: 9000;',
+          '#toggle-admin { display: none !important; position: fixed; top: 16px; right: 16px; z-index: 9000;'
+        );
+      }
+
+      fill.style.width = '85%';
+      sub.textContent = 'Gerando arquivo para download...';
+
+      setTimeout(() => {
+        fill.style.width = '100%';
+
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = clientMode ? 'nossa-historia-CLIENTE.html' : 'nossa-historia-editor.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+
+        setTimeout(() => {
+          overlay.classList.remove('visible');
+          fill.style.width = '0%';
+          showToast(clientMode ? '📤 Versão cliente exportada!' : '⬇ Arquivo editor baixado!', 3000);
+        }, 600);
+      }, 300);
+
+    } catch(err) {
+      overlay.classList.remove('visible');
+      fill.style.width = '0%';
+      console.error('Export error:', err);
+      showToast('❌ Erro ao exportar: ' + err.message, 4000);
+    }
+  }, 100);
 }
 
 // ══════════════════════════════════════════════
@@ -1191,15 +1319,28 @@ document.getElementById('admin-panel').remove();
 function updateTimer() {
   if (!DATA.startDate || isNaN(DATA.startDate)) return;
   const diff = Math.max(0, Date.now() - DATA.startDate.getTime());
-  const s = Math.floor(diff/1000), m = Math.floor(s/60), h = Math.floor(m/60);
-  const d = Math.floor(h/24), mo = Math.floor(d/30.44), y = Math.floor(d/365.25);
-  document.getElementById('t-years').textContent = y;
-  document.getElementById('t-months').textContent = mo % 12;
-  document.getElementById('t-days').textContent = d % 30;
-  document.getElementById('t-hours').textContent = h % 24;
-  document.getElementById('t-mins').textContent = m % 60;
-  document.getElementById('t-secs').textContent = s % 60;
-  const ds = d.toLocaleString('pt-BR');
+  const totalSecs = Math.floor(diff / 1000);
+  const totalMins = Math.floor(totalSecs / 60);
+  const totalHours = Math.floor(totalMins / 60);
+  const totalDays = Math.floor(totalHours / 24);
+
+  // More accurate year/month calculation
+  const start = DATA.startDate;
+  const now = new Date();
+  let years = now.getFullYear() - start.getFullYear();
+  let months = now.getMonth() - start.getMonth();
+  if (months < 0) { years--; months += 12; }
+  const days = Math.floor((now - new Date(now.getFullYear(), now.getMonth(), start.getDate())) / 86400000);
+  const daysDisplay = ((days % 30) + 30) % 30;
+
+  document.getElementById('t-years').textContent = years;
+  document.getElementById('t-months').textContent = months;
+  document.getElementById('t-days').textContent = daysDisplay;
+  document.getElementById('t-hours').textContent = totalHours % 24;
+  document.getElementById('t-mins').textContent = totalMins % 60;
+  document.getElementById('t-secs').textContent = totalSecs % 60;
+
+  const ds = totalDays.toLocaleString('pt-BR');
   const autoN = DATA.stats.find(x => x.id === 'nights');
   const autoD = DATA.stats.find(x => x.id === 'days');
   if (autoN) autoN.value = ds;
@@ -1225,31 +1366,88 @@ function closeLightbox() { document.getElementById('lightbox').classList.remove(
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 // ══════════════════════════════════════════════
-// INIT — show edit button (editor mode)
+// INIT
 // ══════════════════════════════════════════════
 function init() {
-  // Show edit button (editor mode)
-  document.getElementById('toggle-admin').style.display = 'flex';
+  // Show/hide edit button based on mode
+  const editBtn = document.getElementById('toggle-admin');
+  if (editBtn) editBtn.style.display = CLIENT_MODE ? 'none' : 'flex';
 
-  // Default date
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 2);
-  d.setMonth(1); d.setDate(14); d.setHours(20); d.setMinutes(30);
-  const pad = n => String(n).padStart(2, '0');
-  document.getElementById('in-startdate').value =
-    `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  DATA.startDate = d;
+  if (!CLIENT_MODE && !window.__SNAPSHOT__) {
+    // Fresh editor — set default date
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 2);
+    d.setMonth(1); d.setDate(14); d.setHours(20); d.setMinutes(30);
+    const pad = n => String(n).padStart(2, '0');
+    const startInput = document.getElementById('in-startdate');
+    if (startInput) {
+      startInput.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    DATA.startDate = d;
+    DATA.startDateISO = d.toISOString();
+  } else if (window.__SNAPSHOT__ && !CLIENT_MODE) {
+    // Editor re-opened from exported file — populate form fields from snapshot
+    const n1 = document.getElementById('in-name1');
+    const n2 = document.getElementById('in-name2');
+    const sp = document.getElementById('in-start-phrase');
+    const ln = document.getElementById('in-lovenote');
+    const pt = document.getElementById('in-page-title');
+    const sd = document.getElementById('in-startdate');
+    if (n1) n1.value = DATA.name1;
+    if (n2) n2.value = DATA.name2;
+    if (sp) sp.value = DATA.startPhrase;
+    if (ln) ln.value = DATA.lovenote;
+    if (pt) pt.value = DATA.pageTitle;
+    if (sd && DATA.startDateISO) {
+      // Convert ISO to datetime-local format
+      const d = new Date(DATA.startDateISO);
+      const pad = n => String(n).padStart(2, '0');
+      sd.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    // Restore color inputs
+    if (DATA.colors) {
+      const ca = document.getElementById('color-accent');
+      const cg = document.getElementById('color-green');
+      const cd = document.getElementById('color-dark');
+      const ch = document.getElementById('color-hero');
+      if (ca) ca.value = DATA.colors.accent;
+      if (cg) cg.value = DATA.colors.green;
+      if (cd) cd.value = DATA.colors.dark;
+      if (ch) ch.value = DATA.colors.hero;
+    }
+  }
 
-  buildStatFields();
-  buildTimelineFields();
-  buildPlaylistFields();
+  // Apply album image if present in snapshot
+  applyAlbumToDOM();
+
+  // Apply colors
+  applyColors();
+
+  // Build panel fields
+  if (!CLIENT_MODE) {
+    buildStatFields();
+    buildTimelineFields();
+    buildPlaylistFields();
+    if (DATA.galleryImgs.length) {
+      buildCaptionFields();
+      updateGalleryPreviews();
+    }
+  }
+
+  // Render all content
   renderAll();
   renderStats();
   renderTimeline();
   renderPlaylist();
   renderGallery();
   updateTimer();
+
+  // Load first track if playlist has content
+  if (DATA.playlist.length) {
+    loadTrack(0, false);
+  }
 }
+
 init();
 </script>
 </body>
