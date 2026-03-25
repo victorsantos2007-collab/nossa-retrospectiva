@@ -446,7 +446,7 @@ body {
 <!-- Edit Button (hidden in client mode) -->
 <button id="toggle-admin" onclick="toggleAdmin()" title="Personalizar">✏</button>
 
-<!-- Admin Panel -->
+<!-- ADMIN_START -->
 <div id="admin-overlay" onclick="toggleAdmin()"></div>
 <div id="admin-panel">
   <div class="panel-header">
@@ -462,7 +462,6 @@ body {
     <button class="ptab" onclick="switchTab('cores',this)">🎨 Cores</button>
   </div>
   <div class="panel-body">
-
     <div class="tab-content active" id="tab-casal">
       <div class="sdiv">Nomes</div>
       <div class="fg-row">
@@ -477,7 +476,6 @@ body {
       <div class="sdiv">Título da página</div>
       <div class="fg"><label>Título (aba do navegador)</label><input type="text" id="in-page-title" value="Nossa História ♥" oninput="liveUpdate()"></div>
     </div>
-
     <div class="tab-content" id="tab-fotos">
       <div class="sdiv">Capa do álbum</div>
       <label class="photo-upload-zone" id="zone-album">
@@ -494,24 +492,20 @@ body {
       <div class="gallery-previews" id="gallery-previews"></div>
       <div id="caption-fields"></div>
     </div>
-
     <div class="tab-content" id="tab-musica">
       <div class="sdiv">Músicas da playlist</div>
       <p style="font-size:11px;color:#555;margin-bottom:12px">Adicione até 5 músicas (MP3/M4A). O player toca de verdade!</p>
       <div id="playlist-fields"></div>
     </div>
-
     <div class="tab-content" id="tab-stats">
       <div class="sdiv">Estatísticas</div>
       <p style="font-size:11px;color:#555;margin-bottom:12px">Dias e noites são calculados pela data. Edite os demais:</p>
       <div id="stats-fields"></div>
     </div>
-
     <div class="tab-content" id="tab-timeline">
       <div class="sdiv">Momentos especiais</div>
       <div id="timeline-fields"></div>
     </div>
-
     <div class="tab-content" id="tab-cores">
       <div class="sdiv">Cores</div>
       <div class="color-row">
@@ -521,7 +515,6 @@ body {
         <div class="color-field"><input type="color" id="color-hero" value="#3d0020" oninput="updateColors()"><span>Hero glow</span></div>
       </div>
     </div>
-
   </div>
   <div class="panel-save-bar">
     <button class="btn-save" onclick="saveAll()">✓ Aplicar</button>
@@ -529,6 +522,7 @@ body {
     <button class="btn-export-client" onclick="exportHTML(true)" title="Versão para o cliente, sem edição">📤 Cliente</button>
   </div>
 </div>
+<!-- ADMIN_END -->
 
 <!-- MINI PLAYER -->
 <div id="mini-player" onclick="goPage('musica')">
@@ -686,6 +680,28 @@ body {
 
 <script>
 // ══════════════════════════════════════════════
+// ⚠️  FONTE DO HTML — salvo ANTES de qualquer modificação do DOM
+// Esta é a abordagem correta: capturamos o HTML original
+// via fetch(location.href) para exportação limpa.
+// ══════════════════════════════════════════════
+let _originalHTMLSource = null;
+
+async function _fetchOriginalSource() {
+  // Só funciona ao abrir como arquivo local (file://) ou servidor
+  // Se falhar, usamos outerHTML como fallback
+  try {
+    const resp = await fetch(location.href);
+    if (resp.ok) {
+      _originalHTMLSource = await resp.text();
+    }
+  } catch(e) {
+    // fallback: será tratado no exportHTML
+    _originalHTMLSource = null;
+  }
+}
+_fetchOriginalSource();
+
+// ══════════════════════════════════════════════
 // DATA — populated from embedded snapshot or defaults
 // ══════════════════════════════════════════════
 let DATA = {
@@ -716,7 +732,7 @@ let DATA = {
   colors: { accent: '#ff4d6d', green: '#1DB954', dark: '#121212', hero: '#3d0020' }
 };
 
-// ── Load embedded snapshot if present (set during export) ──
+// ── Load embedded snapshot if present ──
 if (window.__SNAPSHOT__) {
   try {
     const snap = window.__SNAPSHOT__;
@@ -743,17 +759,14 @@ function loadTrack(index, autoplay) {
   if (!DATA.playlist.length) return;
   const t = DATA.playlist[index];
   if (!t) return;
-
   const title = t.title || 'Nossa Canção';
   const artist = t.artist || DATA.artist;
   const duration = t.duration || '0:00';
-
   document.getElementById('song-name').textContent = title;
   document.getElementById('song-artist').textContent = artist;
   document.getElementById('mp-title').textContent = title;
   document.getElementById('mp-artist-mini').textContent = artist;
   document.getElementById('hero-duration').textContent = duration;
-
   if (t.audioSrc) {
     audio.src = t.audioSrc;
     audio.load();
@@ -1096,10 +1109,7 @@ function uploadAlbum(input) {
     DATA.albumImg = e.target.result;
     applyAlbumToDOM();
     const zone = document.getElementById('zone-album');
-    if (zone) {
-      zone.classList.add('has-file');
-      zone.querySelector('div').textContent = '✓ Capa adicionada';
-    }
+    if (zone) { zone.classList.add('has-file'); zone.querySelector('div').textContent = '✓ Capa adicionada'; }
     renderPlaylist();
     showToast('✓ Capa do álbum adicionada!');
   };
@@ -1115,9 +1125,7 @@ function uploadGallery(input) {
     r.onload = e => {
       DATA.galleryImgs.push({ src: e.target.result, caption: '' });
       if (++loaded === files.length) {
-        renderGallery();
-        buildCaptionFields();
-        updateGalleryPreviews();
+        renderGallery(); buildCaptionFields(); updateGalleryPreviews();
         showToast('✓ ' + files.length + ' foto(s) adicionada(s)!');
       }
     };
@@ -1135,13 +1143,11 @@ function uploadAudio(input, index) {
     const tmpAudio = new Audio(e.target.result);
     tmpAudio.addEventListener('loadedmetadata', () => {
       DATA.playlist[index].duration = formatTime(tmpAudio.duration);
-      buildPlaylistFields();
-      renderPlaylist();
+      buildPlaylistFields(); renderPlaylist();
       if (index === currentTrack) loadTrack(currentTrack, false);
       renderAll();
     });
-    buildPlaylistFields();
-    renderPlaylist();
+    buildPlaylistFields(); renderPlaylist();
     showToast('✓ Música carregada: ' + file.name);
   };
   r.readAsDataURL(file);
@@ -1209,108 +1215,131 @@ function showToast(msg, dur) {
 }
 
 // ══════════════════════════════════════════════
-// EXPORT — THE FIX
-// The key insight: we serialize the entire DATA object (including
-// base64 images and audio) as a JSON snapshot embedded in the HTML.
-// On load, the page reads this snapshot instead of the defaults.
+// EXPORT — ABORDAGEM CORRETA
+//
+// PROBLEMA ANTERIOR: usava document.documentElement.outerHTML
+// que captura o DOM já modificado pelo JS (com imagens renderizadas,
+// scripts executados, estados inline, etc.) — causava travamento.
+//
+// SOLUÇÃO NOVA:
+// 1. Buscamos o HTML original via fetch(location.href) no load da página
+// 2. Substituímos apenas o bloco <!-- ADMIN_START -->...<!-- ADMIN_END -->
+//    e injetamos o snapshot de forma cirúrgica
+// 3. Fallback para outerHTML se fetch não estiver disponível (ex: blob:)
 // ══════════════════════════════════════════════
-function exportHTML(clientMode) {
-  // Show progress overlay
+async function exportHTML(clientMode) {
   const overlay = document.getElementById('export-overlay');
   const fill = document.getElementById('export-progress-fill');
-  const title = document.getElementById('exp-title');
-  const sub = document.getElementById('exp-sub');
+  const titleEl = document.getElementById('exp-title');
+  const subEl = document.getElementById('exp-sub');
+
   overlay.classList.add('visible');
-  title.textContent = 'Preparando exportação...';
-  sub.textContent = 'Serializando dados...';
+  titleEl.textContent = 'Preparando exportação...';
+  subEl.textContent = 'Coletando dados...';
   fill.style.width = '10%';
 
-  // Use setTimeout to let the UI update before heavy work
-  setTimeout(() => {
-    try {
-      fill.style.width = '30%';
-      sub.textContent = 'Incorporando imagens e músicas...';
+  // Yield para UI atualizar antes do trabalho pesado
+  await new Promise(r => setTimeout(r, 80));
 
-      // Serialize snapshot — includes all base64 data
-      const snapshot = JSON.stringify({
-        name1: DATA.name1,
-        name2: DATA.name2,
-        startDateISO: DATA.startDateISO,
-        startPhrase: DATA.startPhrase,
-        lovenote: DATA.lovenote,
-        pageTitle: DATA.pageTitle,
-        artist: DATA.artist,
-        albumImg: DATA.albumImg,
-        galleryImgs: DATA.galleryImgs,
-        stats: DATA.stats,
-        timeline: DATA.timeline,
-        playlist: DATA.playlist,
-        colors: DATA.colors
-      });
+  try {
+    // ── 1. Serializar snapshot ──
+    subEl.textContent = 'Serializando dados...';
+    fill.style.width = '25%';
+    await new Promise(r => setTimeout(r, 50));
 
-      fill.style.width = '60%';
-      sub.textContent = 'Gerando HTML...';
+    const snapshot = JSON.stringify({
+      name1: DATA.name1,
+      name2: DATA.name2,
+      startDateISO: DATA.startDateISO,
+      startPhrase: DATA.startPhrase,
+      lovenote: DATA.lovenote,
+      pageTitle: DATA.pageTitle,
+      artist: DATA.artist,
+      albumImg: DATA.albumImg,
+      galleryImgs: DATA.galleryImgs,
+      stats: DATA.stats,
+      timeline: DATA.timeline,
+      playlist: DATA.playlist,
+      colors: DATA.colors
+    });
 
-      // Get the base HTML source
-      let html = document.documentElement.outerHTML;
+    fill.style.width = '45%';
+    subEl.textContent = 'Gerando HTML...';
+    await new Promise(r => setTimeout(r, 50));
 
-      // 1. Remove any previously embedded snapshot (for re-exports)
-      html = html.replace(/\/\* __SNAPSHOT_START__ \*\/[\s\S]*?\/\* __SNAPSHOT_END__ \*\//g, '');
-      html = html.replace(/<script id="__snapshot__">[\s\S]*?<\/script>/g, '');
+    // ── 2. Obter fonte HTML ──
+    // Tentamos usar a fonte original capturada no carregamento.
+    // Se não disponível (blob: URLs, CORS, etc.), usamos outerHTML
+    // mas fazemos uma limpeza profunda antes.
+    let baseHTML = _originalHTMLSource;
 
-      // 2. Inject the snapshot BEFORE the closing </body>
-      const snapshotScript = clientMode
-        ? `<script id="__snapshot__">/* __SNAPSHOT_START__ */window.__CLIENT_MODE__=true;window.__SNAPSHOT__=${snapshot};/* __SNAPSHOT_END__ */<\/script>`
-        : `<script id="__snapshot__">/* __SNAPSHOT_START__ */window.__SNAPSHOT__=${snapshot};/* __SNAPSHOT_END__ */<\/script>`;
-
-      html = html.replace('</body>', snapshotScript + '\n</body>');
-
-      // 3. For client mode: remove admin UI from the exported HTML
-      if (clientMode) {
-        // Remove the toggle button
-        html = html.replace(/<button id="toggle-admin"[\s\S]*?<\/button>/g, '');
-        // Remove admin overlay
-        html = html.replace(/<div id="admin-overlay"[\s\S]*?<\/div>/g, '');
-        // Remove admin panel (complex nested structure — use a more targeted approach)
-        html = html.replace(/<div id="admin-panel">[\s\S]*?(?=<!-- MINI PLAYER -->)/, '');
-        // Remove export overlay (not needed in client)
-        html = html.replace(/<div id="export-overlay">[\s\S]*?<\/div>\s*/, '');
-        // Hide the #toggle-admin CSS display style
-        html = html.replace(
-          '#toggle-admin {\n  position: fixed; top: 16px; right: 16px; z-index: 9000;',
-          '#toggle-admin { display: none !important; position: fixed; top: 16px; right: 16px; z-index: 9000;'
-        );
-      }
-
-      fill.style.width = '85%';
-      sub.textContent = 'Gerando arquivo para download...';
-
-      setTimeout(() => {
-        fill.style.width = '100%';
-
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = clientMode ? 'nossa-historia-CLIENTE.html' : 'nossa-historia-editor.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-
-        setTimeout(() => {
-          overlay.classList.remove('visible');
-          fill.style.width = '0%';
-          showToast(clientMode ? '📤 Versão cliente exportada!' : '⬇ Arquivo editor baixado!', 3000);
-        }, 600);
-      }, 300);
-
-    } catch(err) {
-      overlay.classList.remove('visible');
-      fill.style.width = '0%';
-      console.error('Export error:', err);
-      showToast('❌ Erro ao exportar: ' + err.message, 4000);
+    if (!baseHTML) {
+      // Fallback: serializar DOM atual, mas limpar estados dinâmicos
+      baseHTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      // Remover quaisquer snapshots anteriores injetados
+      baseHTML = baseHTML.replace(/<script id="__snapshot__">[\s\S]*?<\/script>\s*/g, '');
+    } else {
+      // Remover qualquer snapshot anterior da fonte original
+      baseHTML = baseHTML.replace(/<script id="__snapshot__">[\s\S]*?<\/script>\s*/g, '');
     }
-  }, 100);
+
+    // ── 3. Construir script de snapshot ──
+    const snapshotTag = clientMode
+      ? `<script id="__snapshot__">window.__CLIENT_MODE__=true;window.__SNAPSHOT__=${snapshot};<\/script>\n`
+      : `<script id="__snapshot__">window.__SNAPSHOT__=${snapshot};<\/script>\n`;
+
+    // ── 4. Injetar snapshot ANTES de </body> ──
+    if (baseHTML.includes('</body>')) {
+      baseHTML = baseHTML.replace('</body>', snapshotTag + '</body>');
+    } else {
+      baseHTML += snapshotTag;
+    }
+
+    // ── 5. Modo cliente: remover bloco admin via marcadores ──
+    if (clientMode) {
+      // Remove tudo entre os marcadores ADMIN_START e ADMIN_END
+      baseHTML = baseHTML.replace(
+        /<!-- ADMIN_START -->[\s\S]*?<!-- ADMIN_END -->/,
+        '<!-- admin removed -->'
+      );
+      // Remove botão de edição
+      baseHTML = baseHTML.replace(
+        /<button id="toggle-admin"[\s\S]*?<\/button>/,
+        ''
+      );
+      // Esconde o botão via CSS (fallback se regex acima falhar)
+      baseHTML = baseHTML.replace(
+        '#toggle-admin {',
+        '#toggle-admin { display: none !important; /* client mode */ '
+      );
+    }
+
+    fill.style.width = '80%';
+    subEl.textContent = 'Gerando arquivo...';
+    await new Promise(r => setTimeout(r, 80));
+
+    // ── 6. Download ──
+    const blob = new Blob([baseHTML], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = clientMode ? 'nossa-historia-CLIENTE.html' : 'nossa-historia-editor.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 15000);
+
+    fill.style.width = '100%';
+    await new Promise(r => setTimeout(r, 400));
+    overlay.classList.remove('visible');
+    fill.style.width = '0%';
+    showToast(clientMode ? '📤 Versão cliente exportada!' : '⬇ Arquivo editor baixado!', 3000);
+
+  } catch(err) {
+    overlay.classList.remove('visible');
+    fill.style.width = '0%';
+    console.error('Export error:', err);
+    showToast('❌ Erro ao exportar: ' + err.message, 5000);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1323,8 +1352,6 @@ function updateTimer() {
   const totalMins = Math.floor(totalSecs / 60);
   const totalHours = Math.floor(totalMins / 60);
   const totalDays = Math.floor(totalHours / 24);
-
-  // More accurate year/month calculation
   const start = DATA.startDate;
   const now = new Date();
   let years = now.getFullYear() - start.getFullYear();
@@ -1332,14 +1359,12 @@ function updateTimer() {
   if (months < 0) { years--; months += 12; }
   const days = Math.floor((now - new Date(now.getFullYear(), now.getMonth(), start.getDate())) / 86400000);
   const daysDisplay = ((days % 30) + 30) % 30;
-
   document.getElementById('t-years').textContent = years;
   document.getElementById('t-months').textContent = months;
   document.getElementById('t-days').textContent = daysDisplay;
   document.getElementById('t-hours').textContent = totalHours % 24;
   document.getElementById('t-mins').textContent = totalMins % 60;
   document.getElementById('t-secs').textContent = totalSecs % 60;
-
   const ds = totalDays.toLocaleString('pt-BR');
   const autoN = DATA.stats.find(x => x.id === 'nights');
   const autoD = DATA.stats.find(x => x.id === 'days');
@@ -1369,12 +1394,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbo
 // INIT
 // ══════════════════════════════════════════════
 function init() {
-  // Show/hide edit button based on mode
   const editBtn = document.getElementById('toggle-admin');
   if (editBtn) editBtn.style.display = CLIENT_MODE ? 'none' : 'flex';
 
   if (!CLIENT_MODE && !window.__SNAPSHOT__) {
-    // Fresh editor — set default date
     const d = new Date();
     d.setFullYear(d.getFullYear() - 2);
     d.setMonth(1); d.setDate(14); d.setHours(20); d.setMinutes(30);
@@ -1386,7 +1409,6 @@ function init() {
     DATA.startDate = d;
     DATA.startDateISO = d.toISOString();
   } else if (window.__SNAPSHOT__ && !CLIENT_MODE) {
-    // Editor re-opened from exported file — populate form fields from snapshot
     const n1 = document.getElementById('in-name1');
     const n2 = document.getElementById('in-name2');
     const sp = document.getElementById('in-start-phrase');
@@ -1399,12 +1421,10 @@ function init() {
     if (ln) ln.value = DATA.lovenote;
     if (pt) pt.value = DATA.pageTitle;
     if (sd && DATA.startDateISO) {
-      // Convert ISO to datetime-local format
       const d = new Date(DATA.startDateISO);
       const pad = n => String(n).padStart(2, '0');
       sd.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
-    // Restore color inputs
     if (DATA.colors) {
       const ca = document.getElementById('color-accent');
       const cg = document.getElementById('color-green');
@@ -1417,13 +1437,9 @@ function init() {
     }
   }
 
-  // Apply album image if present in snapshot
   applyAlbumToDOM();
-
-  // Apply colors
   applyColors();
 
-  // Build panel fields
   if (!CLIENT_MODE) {
     buildStatFields();
     buildTimelineFields();
@@ -1434,7 +1450,6 @@ function init() {
     }
   }
 
-  // Render all content
   renderAll();
   renderStats();
   renderTimeline();
@@ -1442,7 +1457,6 @@ function init() {
   renderGallery();
   updateTimer();
 
-  // Load first track if playlist has content
   if (DATA.playlist.length) {
     loadTrack(0, false);
   }
