@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💌 Formulário — Site do Casal</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Lora:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --bg: #fdf8f5;
+  --surface: #ffffff;
+  --border: #ece6e0;
+  --border-focus: #c9a96e;
+  --text: #1a1208;
+  --text-sub: #7a6a58;
+  --text-dim: #b0a090;
+  --accent: #c9a96e;
+  --accent-dark: #a07840;
+  --accent-light: #f5edd8;
+  --rose: #e8597a;
+  --rose-light: #fdf0f3;
+  --green: #3a7d5c;
+  --green-light: #edf6f1;
+  --step-done: #3a7d5c;
+  --shadow: 0 2px 20px rgba(26,18,8,0.07);
+  --shadow-lg: 0 8px 48px rgba(26,18,8,0.12);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Sora', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(135deg, #1a1208 0%, #2d1f0a 50%, #1a1208 100%);
+  padding: 48px 24px 56px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(201,169,110,0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(201,169,110,0.15);
+  border: 1px solid rgba(201,169,110,0.3);
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 11px; font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: clamp(28px, 7vw, 44px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 em {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  color: var(--accent);
+}
+.hero-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.55);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.progress-steps {
+  display: flex; gap: 6px;
+  max-width: 560px; margin: 0 auto;
+}
+.step-dot {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: var(--border);
+  transition: background 0.4s;
+}
+.step-dot.done { background: var(--step-done); }
+.step-dot.active { background: var(--accent); }
+.progress-label {
+  text-align: center;
+  font-size: 11px; color: var(--text-dim);
+  margin-top: 8px; font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.progress-label span { color: var(--accent); font-weight: 700; }
+
+/* ── CONTAINER ── */
+.container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ── STEP CARD ── */
+.step-card {
+  display: none;
+  animation: stepIn 0.35s cubic-bezier(0.34,1.2,0.64,1);
+}
+.step-card.active { display: block; }
+@keyframes stepIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.step-header {
+  padding: 32px 0 20px;
+  text-align: center;
+}
+.step-icon {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  background: var(--accent-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  margin: 0 auto 14px;
+  box-shadow: 0 4px 16px rgba(201,169,110,0.2);
+}
+.step-title {
+  font-size: 22px; font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.step-desc {
+  font-size: 13px; color: var(--text-sub);
+  line-height: 1.65;
+}
+
+/* ── FORM ELEMENTS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+
+.fg { margin-bottom: 16px; }
+.fg:last-child { margin-bottom: 0; }
+
+.fg label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700;
+  color: var(--text-sub);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.fg label .req { color: var(--rose); font-size: 14px; }
+.fg label .opt { font-size: 10px; color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; font-style: italic; margin-left: 4px; }
+
+.fg input[type="text"],
+.fg input[type="date"],
+.fg input[type="time"],
+.fg input[type="tel"],
+.fg textarea,
+.fg select {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: 'Sora', sans-serif;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+}
+.fg input:focus, .fg textarea:focus, .fg select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(201,169,110,0.15);
+}
+.fg textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+.fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fg-hint { font-size: 11px; color: var(--text-dim); margin-top: 5px; font-style: italic; }
+
+/* ── TIMELINE ITEM ── */
+.tl-item {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.tl-item-num {
+  position: absolute; top: -10px; left: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px; font-weight: 800;
+  padding: 2px 8px; border-radius: 100px;
+  letter-spacing: 0.5px;
+}
+.tl-item .fg { margin-bottom: 10px; }
+.tl-item .fg:last-child { margin-bottom: 0; }
+.tl-remove {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 16px;
+  transition: color 0.2s;
+}
+.tl-remove:hover { color: var(--rose); }
+
+/* ── ADD BUTTON ── */
+.btn-add {
+  width: 100%;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 13px; font-weight: 700;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* ── STAT ITEM ── */
+.stat-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.stat-emoji-input {
+  width: 44px; height: 44px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 20px; text-align: center;
+  outline: none; cursor: pointer;
+  font-family: inherit;
+}
+.stat-label-input {
+  flex: 1;
+  background: transparent; border: none;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-sub);
+  font-family: 'Sora', sans-serif;
+  outline: none;
+}
+.stat-value-input {
+  width: 80px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px; font-weight: 700;
+  color: var(--accent-dark);
+  text-align: center;
+  padding: 6px;
+  font-family: 'Sora', sans-serif;
+  outline: none;
+}
+.stat-remove { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 14px; }
+
+/* ── SONG ITEM ── */
+.song-item {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.song-num {
+  font-size: 10px; font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.song-remove { position: absolute; top: 10px; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 14px; }
+.song-remove:hover { color: var(--rose); }
+
+/* ── NAV BUTTONS ── */
+.nav-btns {
+  display: flex; gap: 10px;
+  padding: 24px 0 16px;
+}
+.btn-back {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  padding: 14px 24px;
+  font-size: 14px; font-weight: 700;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: all 0.2s;
+}
+.btn-back:hover { border-color: var(--text-sub); color: var(--text); }
+.btn-next {
+  flex: 1;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border: none;
+  border-radius: 100px;
+  padding: 14px 24px;
+  font-size: 15px; font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  box-shadow: 0 4px 20px rgba(201,169,110,0.35);
+  transition: all 0.2s;
+  letter-spacing: -0.3px;
+}
+.btn-next:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(201,169,110,0.45); }
+.btn-next:active { transform: translateY(0); }
+
+/* ── FINAL STEP ── */
+.final-card {
+  background: linear-gradient(135deg, #1a1208, #2d1f0a);
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.final-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(201,169,110,0.2) 0%, transparent 70%);
+}
+.final-card-icon { font-size: 48px; margin-bottom: 16px; }
+.final-card h2 { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; position: relative; }
+.final-card p { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.7; position: relative; }
+
+.preview-box {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text-sub);
+  white-space: pre-wrap;
+  font-family: monospace;
+}
+
+.btn-whatsapp {
+  width: 100%;
+  background: linear-gradient(135deg, #25D366, #128C7E);
+  border: none;
+  border-radius: 100px;
+  padding: 18px 24px;
+  font-size: 16px; font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  box-shadow: 0 6px 28px rgba(37,211,102,0.35);
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  letter-spacing: -0.3px;
+  margin-bottom: 10px;
+}
+.btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 36px rgba(37,211,102,0.45); }
+
+.btn-copy {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  padding: 14px 24px;
+  font-size: 14px; font-weight: 700;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: all 0.2s;
+}
+.btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── COLOR OPTIONS ── */
+.color-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.color-opt {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 11px; font-weight: 700;
+}
+.color-opt:hover { transform: scale(1.03); }
+.color-opt.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201,169,110,0.2); }
+.color-opt .swatch { width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 6px; }
+
+/* ── PHONE INPUT ── */
+.phone-wrap { position: relative; }
+.phone-prefix {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 15px; font-weight: 600; color: var(--text-sub);
+  pointer-events: none;
+}
+.phone-wrap input { padding-left: 46px !important; }
+
+/* ── FILE NOTE ── */
+.file-note {
+  background: var(--accent-light);
+  border: 1px solid rgba(201,169,110,0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--accent-dark);
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.file-note strong { font-weight: 700; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--text); color: #fff;
+  padding: 10px 20px; border-radius: 100px;
+  font-size: 13px; font-weight: 600;
+  z-index: 9999; opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none; white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── REQUIRED INDICATOR ── */
+.required-note {
+  font-size: 11px; color: var(--text-dim);
+  text-align: center; padding: 12px 0 4px;
+  font-style: italic;
+}
+
+@media (max-width: 400px) {
+  .fg-row { grid-template-columns: 1fr; }
+  .color-options { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">💌 Formulário do Cliente</div>
+  <h1>Vamos criar o site<br>da <em>sua história</em></h1>
+  <p class="hero-sub">Preencha as informações abaixo. No final, você recebe tudo formatado para enviar direto no WhatsApp.</p>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-steps" id="progress-steps"></div>
+  <div class="progress-label" id="progress-label">Etapa <span id="step-num">1</span> de <span id="step-total">7</span></div>
+</div>
+
+<div class="container">
+  <p class="required-note">Campos com <span style="color:var(--rose)">*</span> são obrigatórios</p>
+
+  <!-- ════ STEP 1: CASAL ════ -->
+  <div class="step-card active" id="step-1">
+    <div class="step-header">
+      <div class="step-icon">👫</div>
+      <div class="step-title">O Casal</div>
+      <div class="step-desc">Comece pelos nomes e a data especial que marca o início de tudo.</div>
+    </div>
+    <div class="card">
+      <div class="fg-row">
+        <div class="fg">
+          <label>Seu nome <span class="req">*</span></label>
+          <input type="text" id="name1" placeholder="Ex: Ana" maxlength="30">
+        </div>
+        <div class="fg">
+          <label>Nome do amor <span class="req">*</span></label>
+          <input type="text" id="name2" placeholder="Ex: Lucas" maxlength="30">
+        </div>
+      </div>
+      <div class="fg">
+        <label>Data que ficaram juntos <span class="req">*</span></label>
+        <input type="date" id="start-date">
+      </div>
+      <div class="fg">
+        <label>Horário (se lembrar) <span class="opt">opcional</span></label>
+        <input type="time" id="start-time">
+        <div class="fg-hint">Deixe em branco se não lembrar o horário exato.</div>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label>Título da página <span class="req">*</span></label>
+        <input type="text" id="page-title" placeholder="Ex: Ana & Lucas 💕" maxlength="50">
+        <div class="fg-hint">Aparece na aba do navegador e no topo do site.</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-next" onclick="goNext(1)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 2: MENSAGEM ════ -->
+  <div class="step-card" id="step-2">
+    <div class="step-header">
+      <div class="step-icon">💌</div>
+      <div class="step-title">Mensagem de Amor</div>
+      <div class="step-desc">Escreva uma frase ou texto especial que vai aparecer em destaque no site.</div>
+    </div>
+    <div class="card">
+      <div class="fg">
+        <label>Mensagem <span class="req">*</span></label>
+        <textarea id="lovenote" rows="4" placeholder="Ex: Cada dia ao seu lado é uma canção que nunca quero parar de ouvir. Você é a melodia mais bonita da minha vida..."></textarea>
+        <div class="fg-hint">Pode ser uma frase sua, uma letra de música, um poema — o que vier do coração.</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-back" onclick="goBack(2)">← Voltar</button>
+      <button class="btn-next" onclick="goNext(2)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 3: MÚSICAS ════ -->
+  <div class="step-card" id="step-3">
+    <div class="step-header">
+      <div class="step-icon">🎵</div>
+      <div class="step-title">Músicas</div>
+      <div class="step-desc">Quais são as músicas de vocês? Adicione até 5.</div>
+    </div>
+    <div class="card">
+      <div id="songs-list"></div>
+      <button class="btn-add" id="add-song-btn" onclick="addSong()">+ Adicionar música</button>
+      <div class="file-note" style="margin-top:12px">
+        <strong>📎 Arquivos de áudio:</strong> Após enviar o formulário, você vai mandar os arquivos MP3 das músicas pelo WhatsApp ou pelo Google Drive. Informe aqui só o nome da música e o artista.
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-back" onclick="goBack(3)">← Voltar</button>
+      <button class="btn-next" onclick="goNext(3)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 4: FOTOS ════ -->
+  <div class="step-card" id="step-4">
+    <div class="step-header">
+      <div class="step-icon">📸</div>
+      <div class="step-title">Fotos</div>
+      <div class="step-desc">Descreva as fotos que você vai enviar. Você as manda pelo WhatsApp depois.</div>
+    </div>
+    <div class="card">
+      <div class="fg">
+        <label>Foto da capa (capa do álbum) <span class="req">*</span></label>
+        <textarea id="cover-desc" rows="2" placeholder="Ex: A foto do nosso primeiro aniversário, nós dois na praia ao pôr do sol."></textarea>
+        <div class="fg-hint">Essa foto vai aparecer como a capa principal do álbum no site.</div>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label>Fotos da galeria <span class="opt">opcional — descreva cada uma</span></label>
+        <textarea id="gallery-desc" rows="5" placeholder="1. Foto do nosso primeiro encontro — restaurante italiano&#10;2. Viagem pra Gramado — dezembro de 2022&#10;3. Aniversário dela — bolo de morango&#10;4. Selfie no show do..."></textarea>
+        <div class="fg-hint">Liste cada foto com uma pequena descrição. Você as envia pelo WhatsApp após o formulário.</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-back" onclick="goBack(4)">← Voltar</button>
+      <button class="btn-next" onclick="goNext(4)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 5: MOMENTOS ════ -->
+  <div class="step-card" id="step-5">
+    <div class="step-header">
+      <div class="step-icon">📍</div>
+      <div class="step-title">Momentos Especiais</div>
+      <div class="step-desc">A linha do tempo da história de vocês. Adicione os momentos mais marcantes.</div>
+    </div>
+    <div class="card">
+      <div id="timeline-list"></div>
+      <button class="btn-add" id="add-tl-btn" onclick="addTimeline()">+ Adicionar momento</button>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-back" onclick="goBack(5)">← Voltar</button>
+      <button class="btn-next" onclick="goNext(5)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 6: STATS ════ -->
+  <div class="step-card" id="step-6">
+    <div class="step-header">
+      <div class="step-icon">📊</div>
+      <div class="step-title">Estatísticas do Casal</div>
+      <div class="step-desc">Números curiosos da história de vocês. Edite os valores como quiser!</div>
+    </div>
+    <div class="card">
+      <div id="stats-list"></div>
+      <button class="btn-add" onclick="addStat()">+ Adicionar stat</button>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-back" onclick="goBack(6)">← Voltar</button>
+      <button class="btn-next" onclick="goNext(6)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 7: COR + CONTATO ════ -->
+  <div class="step-card" id="step-7">
+    <div class="step-header">
+      <div class="step-icon">🎨</div>
+      <div class="step-title">Cor e Contato</div>
+      <div class="step-desc">Escolha o estilo visual do site e informe seu WhatsApp para receber o resultado.</div>
+    </div>
+    <div class="card">
+      <div class="fg">
+        <label>Estilo de cor do site <span class="req">*</span></label>
+        <div class="color-options" id="color-options">
+          <div class="color-opt selected" data-color="rose" onclick="selectColor(this)">
+            <div class="swatch" style="background:linear-gradient(135deg,#ff4d6d,#ff6b8a)"></div>
+            Rosa quente
+          </div>
+          <div class="color-opt" data-color="red" onclick="selectColor(this)">
+            <div class="swatch" style="background:linear-gradient(135deg,#e63946,#c1121f)"></div>
+            Vermelho
+          </div>
+          <div class="color-opt" data-color="purple" onclick="selectColor(this)">
+            <div class="swatch" style="background:linear-gradient(135deg,#7b2d8b,#c77dff)"></div>
+            Roxo
+          </div>
+          <div class="color-opt" data-color="blue" onclick="selectColor(this)">
+            <div class="swatch" style="background:linear-gradient(135deg,#1d4e89,#4cc9f0)"></div>
+            Azul
+          </div>
+          <div class="color-opt" data-color="green" onclick="selectColor(this)">
+            <div class="swatch" style="background:linear-gradient(135deg,#2d6a4f,#52b788)"></div>
+            Verde
+          </div>
+          <div class="color-opt" data-color="gold" onclick="selectColor(this)">
+            <div class="swatch" style="background:linear-gradient(135deg,#c9a96e,#7b5e3b)"></div>
+            Dourado
+          </div>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label>Seu WhatsApp <span class="req">*</span></label>
+        <div class="phone-wrap">
+          <span class="phone-prefix">+55</span>
+          <input type="tel" id="phone" placeholder="11 99999-9999" maxlength="15">
+        </div>
+        <div class="fg-hint">Para receber o site finalizado. Apenas números.</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-back" onclick="goBack(7)">← Voltar</button>
+      <button class="btn-next" onclick="goNext(7)">Ver resumo →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 8: FINAL ════ -->
+  <div class="step-card" id="step-8">
+    <div class="step-header" style="padding-bottom:8px">
+      <div class="step-icon" style="background:#edf6f1">🎉</div>
+      <div class="step-title">Tudo pronto!</div>
+      <div class="step-desc">Confira o resumo e envie direto no WhatsApp.</div>
+    </div>
+
+    <div class="final-card">
+      <div class="final-card-icon">💌</div>
+      <h2>Seu formulário está completo</h2>
+      <p>Clique no botão abaixo para abrir o WhatsApp com todas as informações formatadas e prontas para enviar.</p>
+    </div>
+
+    <div class="preview-box" id="preview-box">Gerando resumo...</div>
+
+    <button class="btn-whatsapp" onclick="sendWhatsApp()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Enviar pelo WhatsApp
+    </button>
+    <button class="btn-copy" onclick="copyText()">📋 Copiar texto</button>
+
+    <div class="nav-btns" style="padding-top:8px">
+      <button class="btn-back" onclick="goBack(8)" style="width:100%">← Editar respostas</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ════════════════════════════════
+// STATE
+// ════════════════════════════════
+const TOTAL_STEPS = 8;
+let currentStep = 1;
+let selectedColor = 'rose';
+
+let songs = [
+  { title: '', artist: '' }
+];
+let timeline = [
+  { date: '', title: '', desc: '' },
+  { date: '', title: '', desc: '' }
+];
+let stats = [
+  { icon: '💋', label: 'Beijos', value: '∞' },
+  { icon: '🤗', label: 'Abraços', value: '' },
+  { icon: '✈️', label: 'Viagens', value: '' },
+  { icon: '🎬', label: 'Filmes juntos', value: '' },
+];
+
+// ════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════
+function updateProgress() {
+  const steps = document.getElementById('progress-steps');
+  steps.innerHTML = '';
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
+    steps.appendChild(d);
+  }
+  document.getElementById('step-num').textContent = currentStep;
+  document.getElementById('step-total').textContent = TOTAL_STEPS;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step-card').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-' + n).classList.add('active');
+  currentStep = n;
+  updateProgress();
+}
+
+function goNext(from) {
+  if (!validateStep(from)) return;
+  if (from === TOTAL_STEPS - 1) {
+    buildPreview();
+  }
+  showStep(from + 1);
+}
+
+function goBack(from) {
+  showStep(from - 1);
+}
+
+// ════════════════════════════════
+// VALIDATION
+// ════════════════════════════════
+function validateStep(step) {
+  if (step === 1) {
+    if (!v('name1') || !v('name2') || !v('start-date') || !v('page-title')) {
+      toast('⚠️ Preencha os campos obrigatórios'); return false;
+    }
+  }
+  if (step === 2) {
+    if (!v('lovenote')) { toast('⚠️ Escreva uma mensagem de amor'); return false; }
+  }
+  if (step === 4) {
+    if (!v('cover-desc')) { toast('⚠️ Descreva a foto de capa'); return false; }
+  }
+  if (step === 7) {
+    if (!v('phone')) { toast('⚠️ Informe seu WhatsApp'); return false; }
+  }
+  return true;
+}
+
+function v(id) {
+  const el = document.getElementById(id);
+  return el && el.value.trim() !== '';
+}
+
+// ════════════════════════════════
+// SONGS
+// ════════════════════════════════
+function renderSongs() {
+  const cont = document.getElementById('songs-list');
+  cont.innerHTML = songs.map((s, i) => `
+    <div class="song-item">
+      <div class="song-num">🎵 Música ${i+1}</div>
+      ${songs.length > 1 ? `<button class="song-remove" onclick="removeSong(${i})">✕</button>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Título</label>
+          <input type="text" value="${s.title}" placeholder="Nome da música"
+            oninput="songs[${i}].title=this.value"
+            style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;color:var(--text);outline:none">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Artista</label>
+          <input type="text" value="${s.artist}" placeholder="Nome do artista"
+            oninput="songs[${i}].artist=this.value"
+            style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;color:var(--text);outline:none">
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('add-song-btn').style.display = songs.length >= 5 ? 'none' : 'flex';
+}
+
+function addSong() {
+  if (songs.length >= 5) return;
+  songs.push({ title: '', artist: '' });
+  renderSongs();
+}
+function removeSong(i) {
+  songs.splice(i, 1);
+  renderSongs();
+}
+
+// ════════════════════════════════
+// TIMELINE
+// ════════════════════════════════
+function renderTimeline() {
+  const cont = document.getElementById('timeline-list');
+  cont.innerHTML = timeline.map((t, i) => `
+    <div class="tl-item">
+      <div class="tl-item-num">Momento ${i+1}</div>
+      ${timeline.length > 1 ? `<button class="tl-remove" onclick="removeTl(${i})">✕</button>` : ''}
+      <div style="margin-top:10px">
+        <div class="fg">
+          <label style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Data</label>
+          <input type="text" value="${t.date}" placeholder="Ex: 14 Fev 2022"
+            oninput="timeline[${i}].date=this.value"
+            style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;color:var(--text);outline:none">
+        </div>
+        <div class="fg">
+          <label style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Título</label>
+          <input type="text" value="${t.title}" placeholder="Ex: Primeiro Encontro"
+            oninput="timeline[${i}].title=this.value"
+            style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;color:var(--text);outline:none">
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Descrição</label>
+          <textarea rows="2" placeholder="O que aconteceu nesse momento especial?"
+            oninput="timeline[${i}].desc=this.value"
+            style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;color:var(--text);outline:none;resize:vertical">${t.desc}</textarea>
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('add-tl-btn').style.display = timeline.length >= 6 ? 'none' : 'flex';
+}
+
+function addTimeline() {
+  if (timeline.length >= 6) return;
+  timeline.push({ date: '', title: '', desc: '' });
+  renderTimeline();
+}
+function removeTl(i) {
+  timeline.splice(i, 1);
+  renderTimeline();
+}
+
+// ════════════════════════════════
+// STATS
+// ════════════════════════════════
+function renderStats() {
+  const cont = document.getElementById('stats-list');
+  cont.innerHTML = stats.map((s, i) => `
+    <div class="stat-item">
+      <input class="stat-emoji-input" type="text" value="${s.icon}" maxlength="2"
+        oninput="stats[${i}].icon=this.value">
+      <input class="stat-label-input" type="text" value="${s.label}" placeholder="Rótulo"
+        oninput="stats[${i}].label=this.value">
+      <input class="stat-value-input" type="text" value="${s.value}" placeholder="Valor"
+        oninput="stats[${i}].value=this.value">
+      ${stats.length > 1 ? `<button class="stat-remove" onclick="removeStat(${i})">✕</button>` : ''}
+    </div>`).join('');
+}
+
+function addStat() {
+  stats.push({ icon: '⭐', label: 'Nova stat', value: '' });
+  renderStats();
+}
+function removeStat(i) {
+  stats.splice(i, 1);
+  renderStats();
+}
+
+// ════════════════════════════════
+// COLOR
+// ════════════════════════════════
+function selectColor(el) {
+  document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = el.dataset.color;
+}
+
+const colorNames = {
+  rose: 'Rosa quente 🌸',
+  red: 'Vermelho ❤️',
+  purple: 'Roxo 💜',
+  blue: 'Azul 💙',
+  green: 'Verde 💚',
+  gold: 'Dourado ✨'
+};
+
+// ════════════════════════════════
+// BUILD PREVIEW & WHATSAPP
+// ════════════════════════════════
+function buildPreview() {
+  const name1 = g('name1');
+  const name2 = g('name2');
+  const date = g('start-date');
+  const time = g('start-time');
+  const title = g('page-title');
+  const lovenote = g('lovenote');
+  const coverDesc = g('cover-desc');
+  const galleryDesc = g('gallery-desc');
+  const phone = g('phone');
+
+  const songsText = songs.filter(s => s.title).map((s, i) =>
+    `   ${i+1}. ${s.title}${s.artist ? ' — ' + s.artist : ''}`).join('\n') || '   (nenhuma informada)';
+
+  const tlText = timeline.filter(t => t.title).map((t, i) =>
+    `   ${i+1}. ${t.date ? t.date + ' — ' : ''}${t.title}${t.desc ? '\n      "${t.desc}"' : ''}`).join('\n') || '   (nenhum informado)';
+
+  const statsText = stats.filter(s => s.label && s.value).map(s =>
+    `   ${s.icon} ${s.label}: ${s.value}`).join('\n') || '   (nenhuma informada)';
+
+  const msg = `╔══════════════════════════╗
+║  💌 PEDIDO DE SITE DO CASAL  ║
+╚══════════════════════════╝
+
+👫 *CASAL*
+• Nome 1: ${name1}
+• Nome 2: ${name2}
+• Juntos desde: ${formatDate(date)}${time ? ' às ' + time : ''}
+• Título do site: ${title}
+
+💌 *MENSAGEM DE AMOR*
+"${lovenote}"
+
+🎵 *MÚSICAS (${songs.filter(s=>s.title).length})*
+${songsText}
+
+📸 *FOTOS*
+• Capa do álbum: ${coverDesc}
+• Galeria:
+${galleryDesc ? galleryDesc.split('\n').map(l => '   ' + l).join('\n') : '   (não informado)'}
+
+📍 *MOMENTOS ESPECIAIS*
+${tlText}
+
+📊 *ESTATÍSTICAS*
+${statsText}
+
+🎨 *COR DO SITE*
+${colorNames[selectedColor]}
+
+📱 *MEU WHATSAPP*
++55 ${phone}
+
+──────────────────────────
+Formulário enviado automaticamente ✅`;
+
+  document.getElementById('preview-box').textContent = msg;
+  return msg;
+}
+
+function formatDate(d) {
+  if (!d) return '(não informado)';
+  const [y, m, day] = d.split('-');
+  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${parseInt(day)} de ${months[parseInt(m)-1]} de ${y}`;
+}
+
+function g(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function sendWhatsApp() {
+  const msg = buildPreview();
+  const phone = g('phone').replace(/\D/g, '');
+  const myNumber = '5500000000000'; // Substitua pelo seu número
+  const encoded = encodeURIComponent(msg);
+  window.open(`https://wa.me/${myNumber}?text=${encoded}`, '_blank');
+}
+
+function copyText() {
+  const msg = buildPreview();
+  navigator.clipboard.writeText(msg).then(() => {
+    toast('✓ Texto copiado!');
+  }).catch(() => {
+    toast('Pressione Ctrl+A e Ctrl+C na caixa de texto');
+  });
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ════════════════════════════════
+// INIT
+// ════════════════════════════════
+renderSongs();
+renderTimeline();
+renderStats();
+updateProgress();
+</script>
+</body>
+</html>
